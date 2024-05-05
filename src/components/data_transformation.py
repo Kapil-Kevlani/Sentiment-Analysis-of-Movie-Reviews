@@ -1,85 +1,91 @@
 import sys
+import os
 from dataclasses import dataclass
-from sklearn.feature_extraction.text import HashingVectorizer
-from sklearn.compose import ColumnTransformer
 import numpy as np 
 import pandas as pd
-from scipy.sparse import csr_matrix, hstack
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.impute import SimpleImputer
+
 from src.exception import CustomException
 from src.logger import logging
-import os
 from src.utils import save_object
-
 
 @dataclass
 class DataTransformationConfig:
-    preprocessor_obj_file_path=os.path.join('artifacts',"proprocessor.pkl")
+    preprocessor_obj_file_path = os.path.join('artifacts', "preprocessor.pkl")
+    vectorizer_obj_file_path = os.path.join('artifacts', "tfidf_vectorizer.pkl")
 
 class DataTransformation:
     def __init__(self):
-        self.data_transformation_config=DataTransformationConfig()
+        self.data_transformation_config = DataTransformationConfig()
 
-
-    def replace_values(self, df, value_map):
-        return df.replace(value_map)
-
-    
-    
-
-    def initiate_data_transformation(self,train_path,test_path):
-
+    def get_data_transformer_object(self):
+        '''
+        This function is responsible for data transformation
+        '''
         try:
-            train_df=pd.read_csv(train_path)
-            test_df=pd.read_csv(test_path)
+            text_column = "review"
+            target_column = "sentiment"
 
-            logging.info("Read train and test data completed")
-
-            logging.info("Obtaining preprocessing object")
-
-            preprocessing_obj=HashingVectorizer()
-
-            review_train_df=train_df['review']
-            sentiment_train_df=train_df['sentiment']
-
-            review_test_df=test_df['review']
-            sentiment_test_df=test_df['sentiment']
-
-            logging.info(
-                f"Applying preprocessing object on training dataframe and testing dataframe."
+            text_pipeline = Pipeline(
+                steps=[
+                    ("vectorizer", TfidfVectorizer(stop_words='english'))
+                ]
             )
 
-            review_train_vec=preprocessing_obj.transform(review_train_df)
-            review_test_vec=preprocessing_obj.transform(review_test_df)
-            sentiment_train = self.replace_values(sentiment_train_df, {'positive': 1, 'negative': 0})
-            sentiment_test = self.replace_values(sentiment_test_df, {'positive': 1, 'negative': 0})
-            sentiment_train_sparse= csr_matrix(np.array(sentiment_train).reshape(-1, 1))
-            sentiment_test_sparse = csr_matrix(np.array(sentiment_test).reshape(-1, 1))
-            # sentiment_train_sparse = sparse.csr_matrix(sentiment_train)
-            # sentiment_test_sparse = sparse.csr_matrix(sentiment_test)
+            logging.info(f"Text column: {text_column}")
 
-
-            train_vec =  hstack([
-                review_train_vec, sentiment_train_sparse
-            ])
-            test_vec = hstack([
-                review_test_vec, sentiment_test_sparse
-            ])
-
-            logging.info(f"Saved preprocessing object.")
-
-            save_object(
-
-                file_path=self.data_transformation_config.preprocessor_obj_file_path,
-                obj=preprocessing_obj
-
+            preprocessor = ColumnTransformer(
+                transformers=[
+                    ("text_pipeline", text_pipeline, text_column)
+                ]
             )
 
+            return preprocessor
+        
+        except Exception as e:
+            raise CustomException(e, sys)
+        
+    def initiate_data_transformation(self, train_path, test_path):
+        try:
+            # Load data
+            train_df = pd.read_csv(train_path)
+            test_df = pd.read_csv(test_path)
+
+            # Initialize preprocessing object
+            preprocessing_obj = self.get_data_transformer_object()
+
+            # Separate features and labels
+            input_feature_train_df = train_df.drop(columns=['sentiment'], axis=1)
+            target_feature_train_df = train_df['sentiment']
+
+            input_feature_test_df = test_df.drop(columns=['sentiment'], axis=1)
+            target_feature_test_df = test_df['sentiment']
+
+            # Transform features using the preprocessing pipeline
+            input_feature_train_arr = preprocessing_obj.fit_transform(input_feature_train_df)
+            input_feature_test_arr = preprocessing_obj.transform(input_feature_test_df)
+
+            # Encode labels using LabelEncoder
+            label_encoder = LabelEncoder()
+            target_feature_train_arr = label_encoder.fit_transform(target_feature_train_df)
+            target_feature_test_arr = label_encoder.transform(target_feature_test_df)
+
+            # Optionally save the preprocessor and label encoder
+            save_object(self.data_transformation_config.preprocessor_obj_file_path, preprocessing_obj)
+            save_object(self.data_transformation_config.vectorizer_obj_file_path, label_encoder)
+
+            # Return processed features and labels (kept separate)
             return (
-                train_vec,
-                test_vec,
+                input_feature_train_arr,
+                target_feature_train_arr,
+                input_feature_test_arr,
+                target_feature_test_arr,
                 self.data_transformation_config.preprocessor_obj_file_path,
+                self.data_transformation_config.vectorizer_obj_file_path
             )
         except Exception as e:
-            raise CustomException(e,sys)
-        
+            raise CustomException(e, sys)
