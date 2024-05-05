@@ -4,7 +4,7 @@ from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn.compose import ColumnTransformer
 import numpy as np 
 import pandas as pd
-from scipy import sparse
+from scipy.sparse import csr_matrix, hstack
 from sklearn.pipeline import Pipeline
 from src.exception import CustomException
 from src.logger import logging
@@ -53,14 +53,18 @@ class DataTransformation:
             review_test_vec=preprocessing_obj.transform(review_test_df)
             sentiment_train = self.replace_values(sentiment_train_df, {'positive': 1, 'negative': 0})
             sentiment_test = self.replace_values(sentiment_test_df, {'positive': 1, 'negative': 0})
+            sentiment_train_sparse= csr_matrix(np.array(sentiment_train).reshape(-1, 1))
+            sentiment_test_sparse = csr_matrix(np.array(sentiment_test).reshape(-1, 1))
             # sentiment_train_sparse = sparse.csr_matrix(sentiment_train)
             # sentiment_test_sparse = sparse.csr_matrix(sentiment_test)
 
 
-            train_vec = np.c_[
-                review_train_vec, np.array(sentiment_train)
-            ]
-            test_vec = np.c_[review_test_vec, np.array(sentiment_test)]
+            train_vec =  hstack([
+                review_train_vec, sentiment_train_sparse
+            ])
+            test_vec = hstack([
+                review_test_vec, sentiment_test_sparse
+            ])
 
             logging.info(f"Saved preprocessing object.")
 
