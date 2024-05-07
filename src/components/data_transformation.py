@@ -76,7 +76,7 @@ class DataTransformation:
 
             # Optionally save the preprocessor and label encoder
             save_object(self.data_transformation_config.preprocessor_obj_file_path, preprocessing_obj)
-            save_object(self.data_transformation_config.vectorizer_obj_file_path, label_encoder)
+            # save_object(self.data_transformation_config.vectorizer_obj_file_path, label_encoder)
 
             # Return processed features and labels (kept separate)
             return (
@@ -84,8 +84,8 @@ class DataTransformation:
                 target_feature_train_arr,
                 input_feature_test_arr,
                 target_feature_test_arr,
-                self.data_transformation_config.preprocessor_obj_file_path,
-                self.data_transformation_config.vectorizer_obj_file_path
+                self.data_transformation_config.preprocessor_obj_file_path
+                # self.data_transformation_config.vectorizer_obj_file_path
             )
         except Exception as e:
             raise CustomException(e, sys)

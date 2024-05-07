@@ -6,5 +6,6 @@ matplotlib
 xgboost
 dill
 scipy
+Flask
 
 #-e .

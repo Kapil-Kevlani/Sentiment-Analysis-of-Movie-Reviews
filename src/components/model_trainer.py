@@ -37,7 +37,41 @@ class ModelTrainer:
                 "Decision Tree": DecisionTreeClassifier(),
                 "SVC": SVC()
             }
-             model_report:dict=evaluate_models(X_train = X_train,y_train = y_train,X_test = X_test, y_test = y_test, models = models)
+             params = {
+                "Logistic_Regression": {
+                    'C': [0.1, 1, 10],
+                    'penalty': ['l2'],
+                    # 'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']
+                },
+                "XGBClassifier": {
+                    'learning_rate': [0.1, 0.01, 0.05, 0.001],
+                    'n_estimators': [50, 100, 200],
+                    # 'max_depth': [3, 5, 7, 9]
+                },
+                "RandomForestClassifier": {
+                    'n_estimators': [50, 100, 200],
+                    # 'max_features': ['auto', 'sqrt', 'log2'],
+                    # 'max_depth': [None, 10, 20, 30],
+                    # 'min_samples_split': [2, 5, 10],
+                    # 'min_samples_leaf': [1, 2, 4]
+                },
+                "AdaBoostClassifier": {
+                    'learning_rate': [0.1, 0.01, 0.5, 0.001],
+                    'n_estimators': [50, 100, 200]
+                },
+                "Decision Tree": {
+                    'criterion': ['gini', 'entropy'],
+                    # 'max_depth': [None, 10, 20, 30],
+                    # 'min_samples_split': [2, 5, 10],
+                    # 'min_samples_leaf': [1, 2, 4]
+                },
+                "SVC": {
+                    'C': [0.1, 1, 10],
+                    'kernel': ['linear', 'rbf', 'poly'],
+                    # 'gamma': ['scale', 'auto']
+                }
+}
+             model_report:dict=evaluate_models(X_train = X_train,y_train = y_train,X_test = X_test, y_test = y_test, models = models, param=params)
             ## To get best model score from dict
              best_model_score = max(sorted(model_report.values()))
 

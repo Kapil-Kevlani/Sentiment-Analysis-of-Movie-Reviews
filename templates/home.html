@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Movie Review</title>
+</head>
+<body>
+    <h1>Movie Review Submission</h1>
+    <p>Please enter your movie review below:</p>
+    <form action="{{ url_for('predict_datapoint')}}" method="POST"> <!-- Make sure to replace /submit-review with your actual server endpoint -->
+        <textarea name="review" rows="10" cols="50" placeholder="Type your review here..."></textarea><br><br>
+        <input type="submit" value="Submit Review">
+    </form>
+    <h2>
+        The Review is {{results}}
+    </h2>
+</body>
+</html>
